@@ -1,187 +1,3 @@
-const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer")
-
-// ===============================
-// Gemini Configuration
-// ===============================
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY
-})
-
-// ===============================
-// Interview Report Schema
-// ===============================
-
-const interviewReportSchema = z.object({
-    matchScore: z.number().describe(
-        "A score between 0 and 100 indicating how well the candidate's profile matches the job description"
-    ),
-
-    technicalQuestions: z.array(
-        z.object({
-            question: z.string(),
-            intention: z.string(),
-            answer: z.string()
-        })
-    ),
-
-    behavioralQuestions: z.array(
-        z.object({
-            question: z.string(),
-            intention: z.string(),
-            answer: z.string()
-        })
-    ),
-
-    skillGaps: z.array(
-        z.object({
-            skill: z.string(),
-            severity: z.enum(["low", "medium", "high"])
-        })
-    ),
-
-    preparationPlan: z.array(
-        z.object({
-            day: z.number(),
-            focus: z.string(),
-            tasks: z.array(z.string())
-        })
-    ),
-
-    title: z.string()
-})
-
-// ===============================
-// Generate Interview Report
-// ===============================
-
-async function generateInterviewReport({
-    resume,
-    selfDescription,
-    jobDescription
-}) {
-
-    const prompt = `
-You are an expert technical interviewer and career coach.
-
-Analyze the candidate's profile against the target job description.
-
-Candidate Resume:
-${resume || "No resume provided"}
-
-Candidate Self Description:
-${selfDescription || "No self description provided"}
-
-Target Job Description:
-${jobDescription}
-
-Generate a detailed interview preparation report.
-
-The report must include:
-
-1. Match score between 0 and 100.
-2. Technical interview questions with:
-   - question
-   - intention
-   - ideal answer
-3. Behavioral interview questions with:
-   - question
-   - intention
-   - ideal answer
-4. Skill gaps with severity:
-   - low
-   - medium
-   - high
-5. A day-by-day preparation plan.
-6. A suitable title for the report.
-
-Focus on the actual requirements of the job description.
-
-Make the questions realistic for an entry-level software developer/internship candidate.
-
-Return only the requested structured JSON.
-`
-
-    const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-
-        contents: prompt,
-
-        config: {
-            responseMimeType: "application/json",
-
-            responseSchema: zodToJsonSchema(
-                interviewReportSchema
-            )
-        }
-    })
-
-    return JSON.parse(response.text)
-}
-
-// ===============================
-// Generate PDF from HTML
-// ===============================
-
-async function generatePdfFromHtml(htmlContent) {
-
-    console.log("Launching Puppeteer...")
-
-    const chromePath = puppeteer.executablePath()
-
-    console.log("Chrome executable path:")
-    console.log(chromePath)
-
-    const browser = await puppeteer.launch({
-        headless: true,
-
-        executablePath: chromePath,
-
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--no-zygote"
-        ]
-    })
-
-    try {
-
-        const page = await browser.newPage()
-
-        await page.setContent(
-            htmlContent,
-            {
-                waitUntil: "networkidle0"
-            }
-        )
-
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-
-            printBackground: true,
-
-            margin: {
-                top: "20mm",
-                bottom: "20mm",
-                left: "15mm",
-                right: "15mm"
-            }
-        })
-
-        return pdfBuffer
-
-    } finally {
-
-        await browser.close()
-
-    }
-}
-
 // ===============================
 // Generate Resume PDF
 // ===============================
@@ -246,11 +62,7 @@ Return only valid JSON matching the requested schema.
     // Gemini Retry Logic
     // ===============================
 
-    for (
-        let attempt = 1;
-        attempt <= maxAttempts;
-        attempt++
-    ) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 
         try {
 
@@ -287,13 +99,52 @@ Return only valid JSON matching the requested schema.
                 error.message
             )
 
-            if (attempt === maxAttempts) {
-                throw error
+            // ===============================
+            // DO NOT RETRY QUOTA ERRORS
+            // ===============================
+
+            const errorMessage = error.message || ""
+
+            if (
+                errorMessage.includes("429") ||
+                errorMessage.includes("quota") ||
+                errorMessage.includes("RESOURCE_EXHAUSTED")
+            ) {
+
+                throw new Error(
+                    "Gemini API quota exceeded. Please try again after the quota resets or check your Gemini API billing/plan."
+                )
             }
 
-            await new Promise(
-                resolve => setTimeout(resolve, 3000)
-            )
+            // ===============================
+            // Retry temporary 503 errors
+            // ===============================
+
+            if (
+                errorMessage.includes("503") ||
+                errorMessage.includes("UNAVAILABLE") ||
+                errorMessage.includes("high demand")
+            ) {
+
+                if (attempt < maxAttempts) {
+
+                    console.log(
+                        "Gemini is temporarily unavailable. Retrying in 5 seconds..."
+                    )
+
+                    await new Promise(
+                        resolve => setTimeout(resolve, 5000)
+                    )
+
+                    continue
+                }
+            }
+
+            // ===============================
+            // Other errors
+            // ===============================
+
+            throw error
         }
     }
 
@@ -336,13 +187,4 @@ Return only valid JSON matching the requested schema.
     )
 
     return pdfBuffer
-}
-
-// ===============================
-// Export Services
-// ===============================
-
-module.exports = {
-    generateInterviewReport,
-    generateResumePdf
 }
