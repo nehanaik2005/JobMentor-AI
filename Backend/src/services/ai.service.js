@@ -93,54 +93,19 @@ Provide:
 6. Job title
 `
 
+    const response = await ai.models.generateContent({
 
-    // Retry Gemini request if temporary 503 occurs
-    let response
+        model: "gemini-3.6-flash",
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
+        contents: prompt,
 
-        try {
-
-            console.log(
-                `Gemini request attempt ${attempt}/3`
-            )
-
-            response = await ai.models.generateContent({
-
-                // Changed from gemini-3-flash-preview
-                model: "gemini-2.5-flash",
-
-                contents: prompt,
-
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: zodToJsonSchema(
-                        interviewReportSchema
-                    )
-                }
-            })
-
-            break
-
-        } catch (error) {
-
-            console.error(
-                `Gemini attempt ${attempt} failed:`,
-                error.message
-            )
-
-            // If this is the last attempt, throw the error
-            if (attempt === 3) {
-                throw error
-            }
-
-            // Wait before retrying
-            await new Promise(resolve =>
-                setTimeout(resolve, 3000)
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: zodToJsonSchema(
+                interviewReportSchema
             )
         }
-    }
-
+    })
 
     return JSON.parse(response.text)
 }
@@ -214,48 +179,19 @@ The resume should:
 `
 
 
-    let response
+    const response = await ai.models.generateContent({
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
+        model: "gemini-3.6-flash",
 
-        try {
+        contents: prompt,
 
-            console.log(
-                `Gemini resume request attempt ${attempt}/3`
-            )
-
-            response = await ai.models.generateContent({
-
-                model: "gemini-2.5-flash",
-
-                contents: prompt,
-
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: zodToJsonSchema(
-                        resumePdfSchema
-                    )
-                }
-            })
-
-            break
-
-        } catch (error) {
-
-            console.error(
-                `Gemini resume attempt ${attempt} failed:`,
-                error.message
-            )
-
-            if (attempt === 3) {
-                throw error
-            }
-
-            await new Promise(resolve =>
-                setTimeout(resolve, 3000)
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: zodToJsonSchema(
+                resumePdfSchema
             )
         }
-    }
+    })
 
 
     const jsonContent = JSON.parse(
