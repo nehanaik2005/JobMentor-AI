@@ -1,4 +1,10 @@
-import { getAllInterviewReports, generateInterviewReport, getInterviewReportById, generateResumePdf } from "../services/interview.api"
+import {
+    getAllInterviewReports,
+    generateInterviewReport,
+    getInterviewReportById,
+    generateResumePdf
+} from "../services/interview.api"
+
 import { useContext, useEffect } from "react"
 import { InterviewContext } from "../interview.context"
 import { useParams } from "react-router"
@@ -13,79 +19,182 @@ export const useInterview = () => {
         throw new Error("useInterview must be used within an InterviewProvider")
     }
 
-    const { loading, setLoading, report, setReport, reports, setReports } = context
+    const {
+        loading,
+        setLoading,
+        report,
+        setReport,
+        reports,
+        setReports
+    } = context
 
-    const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
+
+    // Generate Interview Report
+    const generateReport = async ({
+        jobDescription,
+        selfDescription,
+        resumeFile
+    }) => {
+
         setLoading(true)
-        let response = null
-        try {
-            response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
-            setReport(response.interviewReport)
-        } catch (error) {
-            console.log(error)
-        } finally {
-            setLoading(false)
-        }
 
-        return response.interviewReport
+        try {
+
+            const response = await generateInterviewReport({
+                jobDescription,
+                selfDescription,
+                resumeFile
+            })
+
+            console.log("GENERATE RESPONSE:", response)
+
+            setReport(response.interviewReport)
+
+            return response.interviewReport
+
+        } catch (error) {
+
+            console.error("GENERATE REPORT ERROR:", error)
+
+            throw error
+
+        } finally {
+
+            setLoading(false)
+
+        }
     }
 
+
+    // Get Interview Report By ID
     const getReportById = async (interviewId) => {
+
         setLoading(true)
-        let response = null
+
         try {
-            response = await getInterviewReportById(interviewId)
+
+            const response = await getInterviewReportById(interviewId)
+
+            console.log("GET REPORT RESPONSE:", response)
+
             setReport(response.interviewReport)
+
+            return response.interviewReport
+
         } catch (error) {
-            console.log(error)
+
+            console.error("GET REPORT ERROR:", error)
+
+            throw error
+
         } finally {
+
             setLoading(false)
+
         }
-        return response.interviewReport
     }
 
+
+    // Get All Interview Reports
     const getReports = async () => {
+
         setLoading(true)
-        let response = null
+
         try {
-            response = await getAllInterviewReports()
+
+            const response = await getAllInterviewReports()
+
+            console.log("GET ALL REPORTS RESPONSE:", response)
+
             setReports(response.interviewReports)
+
+            return response.interviewReports
+
         } catch (error) {
-            console.log(error)
-        } finally {
-            setLoading(false)
-        }
 
-        return response.interviewReports
+            console.error("GET ALL REPORTS ERROR:", error)
+
+            throw error
+
+        } finally {
+
+            setLoading(false)
+
+        }
     }
 
+
+    // Generate Resume PDF
     const getResumePdf = async (interviewReportId) => {
+
         setLoading(true)
-        let response = null
+
         try {
-            response = await generateResumePdf({ interviewReportId })
-            const url = window.URL.createObjectURL(new Blob([ response ], { type: "application/pdf" }))
+
+            const response = await generateResumePdf({
+                interviewReportId
+            })
+
+            const url = window.URL.createObjectURL(
+                new Blob([response], {
+                    type: "application/pdf"
+                })
+            )
+
             const link = document.createElement("a")
+
             link.href = url
-            link.setAttribute("download", `resume_${interviewReportId}.pdf`)
+
+            link.setAttribute(
+                "download",
+                `resume_${interviewReportId}.pdf`
+            )
+
             document.body.appendChild(link)
+
             link.click()
-        }
-        catch (error) {
-            console.log(error)
+
+            link.remove()
+
+            window.URL.revokeObjectURL(url)
+
+        } catch (error) {
+
+            console.error("GENERATE RESUME PDF ERROR:", error)
+
+            throw error
+
         } finally {
+
             setLoading(false)
+
         }
     }
 
+
+    // Load reports when page loads
     useEffect(() => {
+
         if (interviewId) {
+
             getReportById(interviewId)
+
         } else {
+
             getReports()
+
         }
-    }, [ interviewId ])
 
-    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf }
+    }, [interviewId])
 
+
+    return {
+        loading,
+        report,
+        reports,
+        generateReport,
+        getReportById,
+        getReports,
+        getResumePdf
+    }
 }
