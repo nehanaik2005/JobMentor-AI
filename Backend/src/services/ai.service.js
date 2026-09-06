@@ -1,19 +1,24 @@
-async function generateResumePdf({ interviewReportId }) {
+async function generateResumePdf({
+    resume,
+    jobDescription,
+    selfDescription
+}) {
     try {
         console.log("Starting AI resume generation...")
-
-        const interviewReport = await InterviewModel.findById(interviewReportId)
-
-        if (!interviewReport) {
-            throw new Error("Interview report not found")
-        }
 
         const prompt = `
 Create a professional, ATS-friendly resume in HTML format.
 
-Use the following interview report information:
+Use the following information:
 
-${JSON.stringify(interviewReport, null, 2)}
+RESUME:
+${resume || "No resume provided"}
+
+JOB DESCRIPTION:
+${jobDescription || "No job description provided"}
+
+SELF DESCRIPTION:
+${selfDescription || "No self description provided"}
 
 Requirements:
 - Return ONLY valid HTML.
@@ -31,6 +36,7 @@ Requirements:
   - Achievements
   - Certifications if available
 - Keep the design simple and ATS-friendly.
+- Tailor the resume toward the provided job description.
 `
 
         console.log("Sending resume request to Gemini...")
@@ -58,14 +64,19 @@ Requirements:
 
         console.log("Generating PDF from HTML...")
 
-        const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
+        const pdfBuffer = await generatePdfFromHtml(
+            jsonContent.html
+        )
 
         console.log("PDF generated successfully")
 
         return pdfBuffer
 
     } catch (error) {
-        console.error("Resume PDF generation failed:", error)
+        console.error(
+            "Resume PDF generation failed:",
+            error
+        )
 
         throw new Error(
             error.message || "Failed to generate resume PDF"
