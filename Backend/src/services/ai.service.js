@@ -5,11 +5,6 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 })
 
-
-// ==========================================
-// GENERATE INTERVIEW REPORT
-// ==========================================
-
 async function generateInterviewReport({
     resume,
     jobDescription,
@@ -69,7 +64,6 @@ Create a JSON response containing:
 }
 
 Requirements:
-
 - Analyze the resume against the job description.
 - Identify matching and missing skills.
 - Generate realistic technical interview questions.
@@ -85,7 +79,7 @@ Requirements:
         console.log("Sending interview request to Gemini...")
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.5-flash-lite",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json"
@@ -110,11 +104,6 @@ Requirements:
     }
 }
 
-
-// ==========================================
-// GENERATE ATS RESUME PDF
-// ==========================================
-
 async function generateResumePdf({
     resume,
     jobDescription,
@@ -124,45 +113,30 @@ async function generateResumePdf({
         console.log("Starting AI resume generation...")
 
         const prompt = `
-Create a professional, ATS-friendly resume in HTML format.
+Create a professional, ATS-friendly resume formatted as full clean HTML styled with inline CSS or standard <style> tags.
 
-Use the following information:
+Candidate Info:
+RESUME: ${resume || "No resume provided"}
+JOB DESCRIPTION: ${jobDescription || "No job description provided"}
+SELF DESCRIPTION: ${selfDescription || "No self description provided"}
 
-RESUME:
-${resume || "No resume provided"}
-
-JOB DESCRIPTION:
-${jobDescription || "No job description provided"}
-
-SELF DESCRIPTION:
-${selfDescription || "No self description provided"}
-
-Requirements:
-- Return ONLY valid HTML.
-- Do not use Markdown.
-- Do not include <html>, <head>, or <body> tags.
-- Use clean professional styling.
-- Make the resume suitable for a software developer/student.
-- Include sections such as:
-  - Name / Contact
-  - Professional Summary
-  - Skills
-  - Education
-  - Projects
-  - Experience if available
-  - Achievements
-  - Certifications if available
-- Keep the design simple and ATS-friendly.
-- Tailor the resume toward the provided job description.
+Return a JSON object with a single key named "html" containing the full HTML string for the resume.
 `
 
         console.log("Sending resume request to Gemini...")
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.5-flash-lite",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: {
-                responseMimeType: "application/json"
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        html: { type: "STRING" }
+                    },
+                    required: ["html"]
+                }
             }
         })
 
@@ -170,15 +144,13 @@ Requirements:
 
         const jsonContent = JSON.parse(response.text)
 
-        if (!jsonContent.html) {
+        if (!jsonContent || !jsonContent.html) {
             throw new Error("Gemini returned empty HTML")
         }
 
         console.log("Generating PDF from HTML...")
 
-        const pdfBuffer = await generatePdfFromHtml(
-            jsonContent.html
-        )
+        const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
 
         console.log("PDF generated successfully")
 
@@ -195,11 +167,6 @@ Requirements:
         )
     }
 }
-
-
-// ==========================================
-// EXPORTS
-// ==========================================
 
 module.exports = {
     generateInterviewReport,
