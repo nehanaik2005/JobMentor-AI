@@ -5,8 +5,8 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 })
 
-// Helper function to handle retry with exponential backoff and fallback models
-async function generateWithFallback(params, models = ["gemini-2.5-flash", "gemini-1.5-flash"], retries = 3) {
+// Helper function to handle retry with exponential backoff and valid fallback models
+async function generateWithFallback(params, models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"], retries = 3) {
     let lastError
 
     for (const model of models) {
@@ -26,7 +26,7 @@ async function generateWithFallback(params, models = ["gemini-2.5-flash", "gemin
                     console.warn(`Gemini 503 on ${model} (Attempt ${attempt}/${retries}). Retrying in ${delay}ms...`)
                     await new Promise(resolve => setTimeout(resolve, delay))
                 } else {
-                    console.warn(`Model ${model} failed on attempt ${attempt}. Switching model if available...`)
+                    console.warn(`Model ${model} failed on attempt ${attempt}: ${error.message || error}. Switching model if available...`)
                     break // Break retry loop to try next fallback model
                 }
             }
