@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({
 })
 
 // Helper function to handle retry with exponential backoff and valid fallback models
-async function generateWithFallback(params, models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"], retries = 3) {
+async function generateWithFallback(params, models = ["gemini-3.6-flash", "gemini-3.5-flash-lite"], retries = 3) {
     let lastError
 
     for (const model of models) {
