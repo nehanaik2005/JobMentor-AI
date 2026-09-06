@@ -79,7 +79,7 @@ Requirements:
         console.log("Sending interview request to Gemini...")
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json"
@@ -126,7 +126,7 @@ Return a JSON object with a single key named "html" containing the full HTML str
         console.log("Sending resume request to Gemini...")
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
