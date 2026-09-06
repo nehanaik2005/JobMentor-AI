@@ -5,6 +5,37 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 })
 
+// Helper function to handle retry with exponential backoff and fallback models
+async function generateWithFallback(params, models = ["gemini-2.5-flash", "gemini-1.5-flash"], retries = 3) {
+    let lastError
+
+    for (const model of models) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const response = await ai.models.generateContent({
+                    ...params,
+                    model: model
+                })
+                return response
+            } catch (error) {
+                lastError = error
+                const isUnavailable = error?.status === 503 || error?.message?.includes("503") || error?.message?.includes("UNAVAILABLE")
+                
+                if (isUnavailable && attempt < retries) {
+                    const delay = Math.pow(2, attempt) * 1000 // Exponential delay: 2s, 4s...
+                    console.warn(`Gemini 503 on ${model} (Attempt ${attempt}/${retries}). Retrying in ${delay}ms...`)
+                    await new Promise(resolve => setTimeout(resolve, delay))
+                } else {
+                    console.warn(`Model ${model} failed on attempt ${attempt}. Switching model if available...`)
+                    break // Break retry loop to try next fallback model
+                }
+            }
+        }
+    }
+
+    throw lastError
+}
+
 async function generateInterviewReport({
     resume,
     jobDescription,
@@ -78,8 +109,7 @@ Requirements:
 
         console.log("Sending interview request to Gemini...")
 
-        const response = await ai.models.generateContent({
-            model: "gemini-3.6-flash",
+        const response = await generateWithFallback({
             contents: prompt,
             config: {
                 responseMimeType: "application/json"
@@ -125,8 +155,7 @@ Return a JSON object with a single key named "html" containing the full HTML str
 
         console.log("Sending resume request to Gemini...")
 
-        const response = await ai.models.generateContent({
-            model: "gemini-3.6-flash",
+        const response = await generateWithFallback({
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
