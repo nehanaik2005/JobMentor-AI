@@ -140,8 +140,18 @@ async function generateResumePdfController(req, res) {
             });
         }
 
+        // Get the data required by the AI resume generator
+        const {
+            resume,
+            jobDescription,
+            selfDescription
+        } = interviewReport;
+
+        // Generate the resume PDF
         const pdfBuffer = await generateResumePdf({
-            interviewReportId
+            resume,
+            jobDescription,
+            selfDescription
         });
 
         res.set({

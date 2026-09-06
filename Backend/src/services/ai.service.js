@@ -83,3 +83,9 @@ Requirements:
         )
     }
 }
+
+
+module.exports = {
+    generateInterviewReport,
+    generateResumePdf
+}
