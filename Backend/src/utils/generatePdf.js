@@ -1,10 +1,10 @@
 const puppeteer = require("puppeteer")
 
 async function generatePdfFromHtml(html) {
-
     let browser
 
     try {
+        console.log("Launching Puppeteer...")
 
         browser = await puppeteer.launch({
             headless: true,
@@ -34,22 +34,13 @@ async function generatePdfFromHtml(html) {
         return pdfBuffer
 
     } catch (error) {
-
-        console.error(
-            "PDF generation failed:",
-            error.message
-        )
-
-        throw new Error(
-            "Failed to generate PDF"
-        )
+        console.error("PDF generation failed:", error)
+        throw new Error("Failed to generate PDF")
 
     } finally {
-
         if (browser) {
             await browser.close()
         }
-
     }
 }
 
