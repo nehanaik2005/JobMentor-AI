@@ -1,7 +1,7 @@
 const { GoogleGenAI } = require("@google/genai")
 const { z } = require("zod")
 const { zodToJsonSchema } = require("zod-to-json-schema")
-const generatePdfFromHtml = require("../utils/pdfGenerator")
+const generatePdfFromHtml = require("../utils/generatePdf")
 
 
 // ===============================
@@ -79,7 +79,7 @@ Your task is to:
 3. Identify important skill gaps.
 4. Generate technical interview questions relevant to the target role.
 5. Generate behavioral interview questions.
-6. Provide strong sample answers that are appropriate for the candidate.
+6. Provide strong sample answers appropriate for the candidate.
 7. Create a practical preparation plan.
 
 Important rules:
@@ -101,7 +101,6 @@ Return only valid JSON matching the requested schema.
 
 
     let response = null
-
     const maxAttempts = 3
 
 
@@ -204,10 +203,6 @@ Return only valid JSON matching the requested schema.
             }
 
 
-            // ===============================
-            // Other errors
-            // ===============================
-
             throw error
         }
     }
@@ -272,9 +267,11 @@ async function generateResumePdf({
 }) {
 
     const resumePdfSchema = z.object({
+
         html: z.string().describe(
             "Complete HTML content for a professional ATS-friendly resume"
         )
+
     })
 
 
@@ -320,7 +317,6 @@ Return only valid JSON matching the requested schema.
 
 
     let response = null
-
     const maxAttempts = 3
 
 
@@ -423,10 +419,6 @@ Return only valid JSON matching the requested schema.
             }
 
 
-            // ===============================
-            // Other errors
-            // ===============================
-
             throw error
         }
     }
@@ -455,7 +447,7 @@ Return only valid JSON matching the requested schema.
     } catch (error) {
 
         console.error(
-            "Invalid Gemini resume JSON:",
+            "Invalid Gemini resume JSON response:",
             response.text
         )
 
