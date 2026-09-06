@@ -188,3 +188,7 @@ Return only valid JSON matching the requested schema.
 
     return pdfBuffer
 }
+module.exports = {
+    generateInterviewReport,
+    generateResumePdf
+}
